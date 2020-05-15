@@ -1,0 +1,313 @@
+---
+title: "TrendAnalysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+D1 <- DataOverweight %>% 
+  mutate(
+    Category = "Overweight"
+  )
+D1 <- D1 %>% 
+  rename(
+    Value = Children.aged..5.years.overweight..br.....weight.for.height...2.SD.
+  )
+D8 <- inner_join(D1, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+D2 <- DataStunted %>% 
+  mutate(
+    Category = "Stunted"
+  )
+D2 <- D2 %>% 
+  rename(
+    Value = Children.aged..5.years.stunted..br.....height.for.age...2.SD.
+  )
+D7 <- inner_join(D2, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+D3 <- DataUnderweight %>% 
+  mutate(
+    Category = "Underweight"
+  )
+D3 <- D3 %>% 
+  rename(
+    Value = Children.aged..5.years.underweight..br.....weight.for.age...2.SD.....
+  )
+D6 <- inner_join(D3, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+
+D4 <- DataWasted %>% 
+  mutate(
+    Category = "Wasted"
+  )
+D4 <- D4 %>% 
+  rename(
+    Value = Children.aged..5.years.wasted..br.....weight.for.height...2.SD.
+  )
+D5 <- inner_join(D4, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+x2 <- rbind(D5, D6, D7, D8)
+
+x2 <- x2 %>% 
+  mutate(
+    Year = sapply(str_split(Year, "-"), '[', 1)
+  )
+```
+
+```{r}
+c1 <- x2 %>% 
+  filter(as.numeric(Year) <= 2014) %>% 
+  summarise(
+    Year = "2014",
+    Total = mean(Value)
+  )
+
+c2 <- x2 %>% 
+  filter(as.numeric(Year) == 2015) %>% 
+  summarise(
+    Year = "2015",
+    Total = mean(Value)
+  )
+
+c3 <- x2 %>% 
+  filter(as.numeric(Year) == 2016) %>% 
+  summarise(
+    Year = "2016",
+    Total = mean(Value)
+  )
+
+c4 <- x2 %>% 
+  filter(as.numeric(Year) == 2017) %>% 
+  summarise(
+    Year = "2017",
+    Total = mean(Value)
+  )
+
+rbind(c1, c2, c3, c4) %>% 
+  ggplot(aes(x = as.numeric(Year), y = Total, label = round(Total,2)))+
+  geom_smooth()+
+  geom_point()+
+  geom_text(size = 3, position = position_stack(vjust = 0.9))+
+  labs(
+    title = "Trend analysis of child malnutrition",
+    x = "Years",
+    y = "% of children suffering from child malnutrition aged 0-5 years"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+a1 <- x2 %>% 
+  filter(as.numeric(Year) <= 2014) %>% 
+  group_by(Category) %>% 
+  summarise(
+    Year = "2014",
+    Total = mean(Value)
+  )
+
+a2 <- x2 %>% 
+  filter(as.numeric(Year) == 2015) %>% 
+  group_by(Category) %>% 
+  summarise(
+    Year = "2015",
+    Total = mean(Value)
+  )
+
+a3 <- x2 %>% 
+  filter(as.numeric(Year) == 2016) %>% 
+  group_by(Category) %>% 
+  summarise(
+    Year = "2016",
+    Total = mean(Value)
+  )
+
+a4 <- x2 %>% 
+  filter(as.numeric(Year) == 2017) %>% 
+  group_by(Category) %>% 
+  summarise(
+    Year = "2017",
+    Total = mean(Value)
+  )
+
+rbind(a1, a2, a3, a4) %>% 
+  ggplot(aes(x = as.numeric(Year), y = Total, color = Category, label = round(Total,2)))+
+  geom_smooth()+
+  geom_point()+
+  geom_text(size = 3, colour="black")+
+  labs(
+    title = "Trend analysis of child malnutrition according to different categories",
+    x = "Years",
+    y = "% of children suffering from child malnutrition aged 0-5 years"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+
+```
+
+
+```{r}
+b1 <- x2 %>% 
+  filter(as.numeric(Year) <= 2014) %>% 
+  group_by(WHO_REGION) %>% 
+  summarise(
+    Year = "2014",
+    Total = mean(Value)
+  )
+
+b2 <- x2 %>% 
+  filter(as.numeric(Year) == 2015) %>% 
+  group_by(WHO_REGION) %>% 
+  summarise(
+    Year = "2015",
+    Total = mean(Value)
+  )
+
+b3 <- x2 %>% 
+  filter(as.numeric(Year) == 2016) %>% 
+  group_by(WHO_REGION) %>% 
+  summarise(
+    Year = "2016",
+    Total = mean(Value)
+  )
+
+b4 <- x2 %>% 
+  filter(as.numeric(Year) == 2017) %>% 
+  group_by(WHO_REGION) %>% 
+  summarise(
+    Year = "2017",
+    Total = mean(Value)
+  )
+
+rbind(b1, b2, b3, b4) %>% 
+  filter(WHO_REGION != "Eastern Mediterranean") %>% 
+  ggplot(aes(x = as.numeric(Year), y = Total, color = WHO_REGION, label = round(Total, 2)))+
+  geom_smooth()+
+  geom_point()+
+  geom_text(size = 3, colour="black")+
+  labs(
+    title = "Trend analysis of child malnutrition according to WHO Regions",
+    x = "Years",
+    y = "% of children suffering from child malnutrition aged 0-5 years"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+d1 <- x2 %>% 
+  filter(as.numeric(Year) <= 2014) %>% 
+  group_by(`World Bank income group`) %>% 
+  summarise(
+    Year = "2014",
+    Total = mean(Value)
+  )
+
+d2 <- x2 %>% 
+  filter(as.numeric(Year) == 2015) %>% 
+  group_by(`World Bank income group`) %>% 
+  summarise(
+    Year = "2015",
+    Total = mean(Value)
+  )
+
+d3 <- x2 %>% 
+  filter(as.numeric(Year) == 2016) %>% 
+  group_by(`World Bank income group`) %>% 
+  summarise(
+    Year = "2016",
+    Total = mean(Value)
+  )
+
+d4 <- x2 %>% 
+  filter(as.numeric(Year) == 2017) %>% 
+  group_by(`World Bank income group`) %>% 
+  summarise(
+    Year = "2017",
+    Total = mean(Value)
+  )
+
+rbind(d1, d2, d3, d4) %>% 
+  ggplot(aes(x = as.numeric(Year), y = Total, color = `World Bank income group`, label = round(Total,2)))+
+  geom_line()+
+  geom_point()+
+  geom_text(size = 3, colour="black")+
+  labs(
+    title = "Trend analysis of child malnutrition according to income groups",
+    x = "Years",
+    y = "% of children suffering from child malnutrition aged 0-5 years"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

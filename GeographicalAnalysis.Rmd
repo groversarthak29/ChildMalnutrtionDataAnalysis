@@ -1,0 +1,292 @@
+---
+title: "Project-1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(dplyr)
+library(stringr)
+library(lubridate)
+library("readxl")
+library(ggplot2)
+library(treemap)
+
+FinalDataset <- inner_join(DataOverweight, DataStunted, by = c("Country" = "Country", "Year" = "Year"))
+FinalDataset <- inner_join(FinalDataset, DataUnderweight, by = c("Country" = "Country", "Year" = "Year"))
+FinalDataset <- inner_join(FinalDataset, DataWasted, by = c("Country" = "Country", "Year" = "Year"))
+
+View(FinalDataset)
+
+ForGeographicData <- FinalDataset %>% 
+  group_by(Country) %>% 
+  summarise(
+    AgerageOverWeightProportion = mean(Children.aged..5.years.overweight..br.....weight.for.height...2.SD.),
+    AgerageStuntedProportion = mean(Children.aged..5.years.stunted..br.....height.for.age...2.SD.),
+    AgerageUnderWeightProportion = mean(Children.aged..5.years.underweight..br.....weight.for.age...2.SD.....),
+    AgerageWastedProportion = mean(Children.aged..5.years.wasted..br.....weight.for.height...2.SD.)
+  )
+
+DataCountryParameters <- read_excel(file.choose(), sheet = 8)
+
+ForGeographicData <- inner_join(ForGeographicData, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Country, AgerageOverWeightProportion, AgerageStuntedProportion, AgerageUnderWeightProportion, AgerageWastedProportion, WHO_REGION, `World Bank income group`)
+```
+
+```{r}
+x1 %>% 
+  group_by(WHO_REGION, Category) %>% 
+  summarise(
+    Total = mean(Total)
+  ) %>% 
+  ggplot(aes(x = reorder(WHO_REGION, Total), y = Total, label = round(Total), fill = Category)) + 
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  geom_text(size = 3, position = position_stack(vjust = 0.5))+
+  labs(
+    title = "Distribution of child malnutrition according to regions",
+    x = "WHO Regions",
+    y = "Percentage of children suffering from child malnutrition aged 0-5 years"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+
+```{r}
+ForGeographicData1 <- ForGeographicData %>% 
+  group_by(WHO_REGION) %>% 
+  summarise(
+    AgerageOverWeightProportionAccordingToRegion = mean(AgerageOverWeightProportion),
+    AgerageStuntedProportionAccordingToRegion = mean(AgerageStuntedProportion),
+    AgerageUnderWeightProportionAccordingToRegion = mean(AgerageUnderWeightProportion),
+    AgerageWastedProportionAccordingToRegion = mean(AgerageWastedProportion)
+  )
+```
+
+
+```{r}
+D1 <- DataOverweight %>% 
+  mutate(
+    Category = "Overweight"
+  )
+D1 <- D1 %>% 
+  rename(
+    Value = Children.aged..5.years.overweight..br.....weight.for.height...2.SD.
+  )
+D8 <- inner_join(D1, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+D2 <- DataStunted %>% 
+  mutate(
+    Category = "Stunted"
+  )
+D2 <- D2 %>% 
+  rename(
+    Value = Children.aged..5.years.stunted..br.....height.for.age...2.SD.
+  )
+D7 <- inner_join(D2, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+D3 <- DataUnderweight %>% 
+  mutate(
+    Category = "Underweight"
+  )
+D3 <- D3 %>% 
+  rename(
+    Value = Children.aged..5.years.underweight..br.....weight.for.age...2.SD.....
+  )
+D6 <- inner_join(D3, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+
+D4 <- DataWasted %>% 
+  mutate(
+    Category = "Wasted"
+  )
+D4 <- D4 %>% 
+  rename(
+    Value = Children.aged..5.years.wasted..br.....weight.for.height...2.SD.
+  )
+D5 <- inner_join(D4, DataCountryParameters, by = c("Country" = "DisplayValue")) %>% 
+  select(Category, Country, Year, Value, WHO_REGION, `World Bank income group`)
+
+x1 <- rbind(D5, D6, D7, D8) %>% 
+  group_by(Category, WHO_REGION) %>% 
+  summarise(
+    Total = mean(Value)
+  )
+```
+
+
+```{r}
+D5 %>% 
+  group_by(WHO_REGION, `World Bank income group`) %>% 
+  summarise(
+    Total = mean(Value)
+  ) %>% 
+  ggplot(aes(x = reorder(WHO_REGION, Total), y = Total, fill = `World Bank income group`, label = round(Total)))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  geom_text(size = 3, position = position_stack(vjust = 0.5))+
+  labs(
+    title = "Percentage of wasted children aged 0-5 years",
+    x = "WHO Regions",
+    y = "Percentage (%)",
+    fill = "Income levels of country"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+D6 %>% 
+  group_by(WHO_REGION, `World Bank income group`) %>% 
+  summarise(
+    Total = mean(Value)
+  ) %>% 
+  ggplot(aes(x = reorder(WHO_REGION, Total), y = Total, fill = `World Bank income group`, label = round(Total)))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  geom_text(size = 3, position = position_stack(vjust = 0.5))+
+  labs(
+    title = "Percentage of underweight children aged 0-5 years",
+    x = "WHO Regions",
+    y = "Percentage (%)",
+    fill = "Income levels of country"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+D7 %>% 
+  group_by(WHO_REGION, `World Bank income group`) %>% 
+  summarise(
+    Total = mean(Value)
+  ) %>% 
+  ggplot(aes(x = reorder(WHO_REGION, Total, FUN = sum), y = Total, fill = `World Bank income group`, label = round(Total)))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  geom_text(size = 3, position = position_stack(vjust = 0.5))+
+  labs(
+    title = "Percentage of stunted children aged 0-5 years",
+    x = "WHO Regions",
+    y = "Percentage (%)",
+    fill = "Income levels of country"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+D8 %>% 
+  group_by(WHO_REGION, `World Bank income group`) %>% 
+  summarise(
+    Total = mean(Value)
+  ) %>% 
+  ggplot(aes(x = reorder(WHO_REGION, Total), y = Total, fill = `World Bank income group`, label = round(Total)))+
+  geom_bar(stat = "identity")+
+  coord_flip()+
+  geom_text(size = 3, position = position_stack(vjust = 0.5))+
+  labs(
+    title = "Percentage of overweight children aged 0-5 years",
+    x = "WHO Regions",
+    y = "Percentage (%)",
+    fill = "Income levels of country"
+  )+
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+```{r}
+
+x2 <- x1 %>% 
+  mutate(
+    ABC = ifelse(Category == "Wasted" & WHO_REGION == "Africa" , "Low income", ifelse(Category == "Wasted" & WHO_REGION == "Americas", "Low income", ifelse(Category == "Wasted" & WHO_REGION == "Eastern Mediterranean", "Low income", ifelse(Category == "Wasted" & WHO_REGION == "Europe", "Low income", ifelse(Category == "Wasted" & WHO_REGION == "South-East Asia", "Lower middle income", ifelse(Category == "Wasted" & WHO_REGION == "Western Pacific", "Lower middle income", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                          ifelse(Category == "Stunted" & WHO_REGION == "Africa" , "Low income", ifelse(Category == "Stunted" & WHO_REGION == "Americas", "Low income", ifelse(Category == "Stunted" & WHO_REGION == "Eastern Mediterranean", "Low income", ifelse(Category == "Stunted" & WHO_REGION == "Europe", "Low income", ifelse(Category == "Stunted" & WHO_REGION == "South-East Asia", "Lower middle income", ifelse(Category == "Stunted" & WHO_REGION == "Western Pacific", "Lower middle income", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ifelse(Category == "Overweight" & WHO_REGION == "Africa" , "Upper middle income", ifelse(Category == "Overweight" & WHO_REGION == "Americas", "High income", ifelse(Category == "Overweight" & WHO_REGION == "Eastern Mediterranean", "Upper middle income", ifelse(Category == "Overweight" & WHO_REGION == "Europe", "Lower middle income", ifelse(Category == "Overweight" & WHO_REGION == "South-East Asia", "Upper middle income", ifelse(Category == "Overweight" & WHO_REGION == "Western Pacific", "Upper middle income", 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ifelse(Category == "Underweight" & WHO_REGION == "Africa" , "Low income", ifelse(Category == "Underweight" & WHO_REGION == "Americas", "Low income", ifelse(Category == "Underweight" & WHO_REGION == "Eastern Mediterranean", "Low income", ifelse(Category == "Underweight" & WHO_REGION == "Europe", "Low income", ifelse(Category == "Underweight" & WHO_REGION == "South-East Asia", "Lower middle income", ifelse(Category == "Underweight" & WHO_REGION == "Western Pacific", "Lower middle income", "NA"))))))))))))))))))))))))
+  )
+
+x3 <- x2
+x3$Total <- round(x3$Total)
+
+levels(x3$ABC)
+x3$ABC <- factor(x3$ABC, levels = c("High income", "Upper middle income", "Low income", "Lower middle income"))
+x3$ABC <- as.factor(x3$ABC)
+
+x3$label <- paste(x3$WHO_REGION, x3$Total, sep = ", ")
+
+treemap(
+  x3,
+  index = c("Category", "label"),
+  vColor = "ABC",
+  vSize = "Total",
+  type = "categorical",
+  title = "Distribution of child malnutrition according to WHO regions and income levels",
+  fontsize.title = 14,
+  position.legend = "bottom",
+  title.legend = "Most prominent income level of countries",
+  fontface.labels = "bold",
+  fontsize.labels = 7
+)
+```
+
+```{r}
+write.table(x4, file = "data1234.csv",
+            sep = "\t", row.names = F)
+
+x4 <- ForGeographicData %>% 
+  group_by(WHO_REGION) %>% 
+  summarise(
+    Total = mean(Value)
+  )
+```
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

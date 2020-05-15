@@ -1,0 +1,219 @@
+---
+title: "Association"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+A1 <- D1 %>% 
+  group_by(Country) %>% 
+  summarise(
+    OverweightValue = round(mean(Value),2)
+  )
+
+A2 <- D2 %>% 
+  group_by(Country) %>% 
+  summarise(
+    StuntedValue = round(mean(Value),2)
+  )
+
+A3 <- D3 %>% 
+  group_by(Country) %>% 
+  summarise(
+    UnderweightValue = round(mean(Value),2)
+  )
+
+A4 <- D4 %>% 
+  group_by(Country) %>% 
+  summarise(
+    WastedValue = round(mean(Value),2)
+  )
+
+A5 <- inner_join(A1, A2, by = c("Country" = "Country"))
+A5 <- inner_join(A5, A3, by = c("Country" = "Country"))
+A5 <- inner_join(A5, A4, by = c("Country" = "Country"))
+
+A6 <- A5 %>% 
+  mutate(
+    YesOverweight = ifelse(OverweightValue > mean(OverweightValue), "Y", "N"),
+    YesStunted = ifelse(StuntedValue > mean(StuntedValue), "Y", "N"),
+    YesUnderweight = ifelse(UnderweightValue > mean(UnderweightValue), "Y", "N"),
+    YesWasted = ifelse(WastedtValue > mean(WastedtValue), "Y", "N")
+  ) %>% 
+  select(Country, YesOverweight, YesStunted, YesUnderweight, YesWasted)
+
+A7 <- A6 %>% 
+  mutate(
+    YesStuntingAndUnderweight = ifelse(YesUnderweight == "Y" & YesStunted == "Y", "Y", "N"),
+    YesUnderweightAndWasting = ifelse(YesUnderweight == "Y" & YesWasted == "Y", "Y", "N"),
+    YesUnderweightWastingAndStunting = ifelse(YesUnderweight == "Y" & YesWasted == "Y" & YesStunted == "Y", "Y", "N"),
+    YesStuntingAndWasting = ifelse(YesWasted == "Y" & YesStunted == "Y", "Y", "N")
+  ) %>% 
+  select(Country, YesStuntingAndUnderweight, YesUnderweightAndWasting, YesUnderweightWastingAndStunting, YesStuntingAndWasting)
+
+A8 <- A7 %>% 
+  group_by(YesStuntingAndUnderweight) %>% 
+  summarise(
+    Category = "Underweight and Stunted",
+    Total = n()/147
+  ) %>% 
+  filter(YesStuntingAndUnderweight == "Y")
+
+A9 <- A7 %>% 
+  group_by(YesUnderweightAndWasting) %>% 
+  summarise(
+    Category = "Underweight and Wasted",
+    Total = n()/147
+  ) %>% 
+  filter(YesUnderweightAndWasting == "Y")
+
+A11 <- A7 %>% 
+  group_by(YesUnderweightWastingAndStunting) %>% 
+  summarise(
+    Category = "Underweight, Wasted and Stunted",
+    Total = n()/147
+  ) %>% 
+  filter(YesUnderweightWastingAndStunting == "Y")
+
+A12 <- A7 %>% 
+  group_by(YesStuntingAndWasting) %>% 
+  summarise(
+    Category = "Wasted and Stunted",
+    Total = n()/147
+  ) %>% 
+  filter(YesStuntingAndWasting == "Y")
+
+A8 <- A8 %>% select(Category, Total)
+A9 <- A9 %>% select(Category, Total)
+A11 <- A11 %>% select(Category, Total)
+A12 <- A12 %>% select(Category, Total)
+
+library(scales)
+
+A10 <- rbind(A8, A9, A11, A12)
+
+A10 %>% 
+  ggplot(aes(x = reorder(Category, Total), y = Total)) +
+  geom_bar(stat = "identity")+
+  geom_text(aes(label = percent_format()(Total)), nudge_y = .03)+
+  labs(
+    title = "Association between Underweight, Stunting and Wasting",
+    x = "Category",
+    y = "Proportion",
+    fill = "Category of product",
+    caption = "38.10% implies that for a particular country there is 38.10% chance that both occour together"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+    legend.title = element_text(face = "bold"),
+    plot.caption = element_text(face = "italic", size = 6)
+  ) +
+  scale_fill_brewer(palette = "Blues")
+```
+
+
+```{r}
+x2
+o1 <- A5 %>%
+  mutate(
+    Category = "SAASA",
+    ACCV = "SASASASASASAs"
+  ) %>% 
+  ggplot(aes(x=StuntedValue, y= OverweightValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE)+
+  facet_grid(ACCV ~ Category)
+
+cor(A5$StuntedValue, A5$UnderweightValue)
+
+grid.arrange(o1, o1, nrow = 1)
+
+ggplot(A5, aes(x=StuntedValue, y= OverweightValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE) 
+
+
+
+cor(A5$WastedtValue, A5$UnderweightValue)
+cor(A5$StuntedValue, A5$WastedtValue)
+cor(A5$StuntedValue, A5$UnderweightValue)
+cor(A5$StuntedValue, A5$OverweightValue)
+```
+
+```{r}
+A5 %>% 
+ggplot(aes(x = Country, y = OverweightValue)) + 
+  geom_histogram(stat = "identity", binwidth = 0.005)
+```
+
+```{r}
+install.packages("corrplot")
+library(corrplot)
+
+del1 <- A5 %>% 
+  select(Underweight = UnderweightValue, Stunted = StuntedValue, Overweight = OverweightValue, Wasted = WastedValue)
+
+M <- cor(del1)
+corrplot(M, method = "number")
+
+corrplot(M, method="color",   
+         type="lower", order="hclust", 
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col="black", tl.srt=0, #Text label color and rotation
+         # Combine with significance
+         sig.level = 0.01, insig = "blank", 
+         # hide correlation coefficient on the principal diagonal
+         diag=FALSE 
+         )
+```
+
+```{r}
+p1 <- ggplot(A5, aes(x=WastedValue, y= OverweightValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE)
+
+p2 <- ggplot(A5, aes(x=UnderweightValue, y= OverweightValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE) 
+
+p3 <- ggplot(A5, aes(x=UnderweightValue, y= WastedValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE) 
+
+p4 <- ggplot(A5, aes(x=StuntedValue, y= OverweightValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE) 
+
+p5 <- ggplot(A5, aes(x=StuntedValue, y= WastedValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE) 
+
+p6 <- ggplot(A5, aes(x=StuntedValue, y= UnderweightValue)) +
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE) 
+
+grid.arrange(p1, p2, p3, p4, p5, p6)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
